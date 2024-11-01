@@ -1,0 +1,138 @@
+---
+title: "Heatmap for CIGS Data"
+output: html_document
+date: "2024-11-01"
+---
+
+```{r}
+library(Rtsne)
+library(gplots)
+library(ggplot2)
+Gene_filtered<-as.character(read.csv("20231128-2-Gene_filtered_2488.csv",header = T)[,1])
+FC_231_1100<-read.csv("20230712-FC_231_palte_merge.csv",header = T,row.names = 1)
+FC_231_1100[is.na(FC_231_1100)] <- 0
+
+FC_293T_11000<-read.csv("20230905-FC_293T_palte_merge.csv",header = T,row.names = 1)
+FC_293T_11000[is.na(FC_293T_11000)] <- 0
+FC_293T_11000_1<-FC_293T_11000
+FC_293T_11000_1[is.na(FC_293T_11000_1)] <- 0
+#Separate the Drug samples and JQ1 samples
+FC_293T_Drug<-FC_293T_11000_1[,-grep("JQ1",colnames(FC_293T_11000_1))]
+FC_293T_JQ1<-FC_293T_11000_1[,grep("JQ1",colnames(FC_293T_11000_1))]
+FC_231_Drug<-FC_231_11000[,-grep("JQ1",colnames(FC_231_11000))]
+FC_231_JQ1<-FC_231_11000[,grep("JQ1",colnames(FC_231_11000))]
+FC_231_10_DRUG<-FC_231_10_1[,-grep("Plate",colnames(FC_231_10_1))]
+FC_231_10_JQ1<-FC_231_10_1[,grep("Plate",colnames(FC_231_10_1))]
+colnames(FC_231_10_JQ1)<-paste0("JQ1.",seq(1,20,1))
+FC_231_20_DRUG<-FC_231_20_1[,-grep("Plate",colnames(FC_231_20_1))]
+FC_231_20_JQ1<-FC_231_20_1[,grep("Plate",colnames(FC_231_20_1))]
+colnames(FC_231_20_JQ1)<-paste0("JQ1.",seq(1,20,1))
+FC_293T_10_DRUG<-FC_293T_10_1[,-grep("Plate",colnames(FC_293T_10_1))]
+FC_293T_10_JQ1<-FC_293T_10_1[,grep("Plate",colnames(FC_293T_10_1))]
+colnames(FC_293T_10_JQ1)<-paste0("JQ1.",seq(1,20,1))
+FC_293T_20_DRUG<-FC_293T_20_1[,-grep("Plate",colnames(FC_293T_20_1))]
+FC_293T_20_JQ1<-FC_293T_20_1[,grep("Plate",colnames(FC_293T_20_1))]
+colnames(FC_293T_20_JQ1)<-paste0("JQ1.",seq(1,20,1))
+FC_231_11000_Drug<-FC_231_11000[,-grep("JQ1",colnames(FC_231_11000))]
+FC_231_11000_JQ1<-FC_231_11000[,grep("JQ1",colnames(FC_231_11000))]
+colnames(FC_231_11000_JQ1)<-paste0("JQ1.",seq(1,29,1))
+FC_293T_11000_Drug<-FC_293T_11000_1[,-grep("JQ1",colnames(FC_293T_11000_1))]
+FC_293T_11000_JQ1<-FC_293T_11000_1[,grep("JQ1",colnames(FC_293T_11000_1))]
+colnames(FC_293T_11000_JQ1)<-paste0("JQ1.",seq(1,32,1))
+
+meta_231<-read.csv("20230312-231-Meta.csv",header = T)
+Count_231<-read.csv("20230312-231-Counts.csv",header = T,row.names = 1)
+meta_231_1<-meta_231[meta_231$treatment!="RNA",]
+meta_231_2<-meta_231_1[meta_231_1$treatment!="Blank",]
+meta_231_3<-meta_231_2[meta_231_2$treatment!="blank",]
+#low total reads
+deltaQ_231 <- round(as.numeric(quantile(log2(meta_231_3$Total.Reads),0.75) - quantile(log2(meta_231_3$Total.Reads),0.25)),4)
+outlier_r_231 <- as.numeric(quantile(log2(meta_231_3$Total.Reads),0.25)) - 1.5*deltaQ_231
+meta_231_3$status <- ifelse(log2(meta_231_3$Total.Reads) < outlier_r_231,"lowqc","pass")
+meta_231_3<-meta_231_3[meta_231_3$status=="pass",]
+Count_231_11000<-Count_231[meta_231_3$unique_ID,]
+
+meta_293T<-read.csv("20230312-293T-Meta.csv",header = T)
+Count_293T<-read.csv("20230312-293T-Counts.csv",header = T,row.names = 1)
+meta_293T_1<-meta_293T[meta_293T$treatment!="RNA",]
+meta_293T_2<-meta_293T_1[meta_293T_1$treatment!="Blank",]
+meta_293T_3<-meta_293T_2[meta_293T_2$treatment!="blank",]
+#low total reads
+deltaQ_293T <- round(as.numeric(quantile(log2(meta_293T_3$Total.read),0.75) - quantile(log2(meta_293T_3$Total.read),0.25)),4)
+outlier_r_293T <- as.numeric(quantile(log2(meta_293T_3$Total.read),0.25)) - 1.5*deltaQ_293T
+meta_293T_3$status <- ifelse(log2(meta_293T_3$Total.read) < outlier_r_293T,"lowqc","pass")
+meta_293T_3<-meta_293T_3[meta_293T_3$status=="pass",]
+meta_293T_4<-meta_293T_3[meta_293T_3$sample_plate!="MCE4_293T_24H_X1",]
+meta_293T_4<-meta_293T_4[meta_293T_4$sample_plate!="MCE4_293T_24H_X2",]
+meta_293T_4<-meta_293T_4[meta_293T_4$sample_plate!="MCE4_293T_24H_X3",]
+Count_293T_11000<-Count_293T[meta_293T_3$unique_ID,]
+
+Count_231_10_XL_1<-t(Count_231_10_XL_1)
+Count_231_20_XL_1<-t(Count_231_20_XL_1)
+Count_293T_10_XL_1<-t(Count_293T_10_XL_1)
+Count_293T_20_XL_1<-t(Count_293T_20_XL_1)
+Count_231_11000_1<-t(Count_231_11000)
+Count_293T_11000_1<-t(Count_293T_11000)
+colnames(Count_231_10_XL_1)<-meta_231_10_XL_2$Treat
+colnames(Count_231_20_XL_1)<-meta_231_20_XL_2$Treat
+colnames(Count_293T_10_XL_1)<-meta_293T_10_XL_2$Treat
+colnames(Count_293T_20_XL_1)<-meta_293T_20_XL_2$Treat
+colnames(Count_231_11000_1)<-meta_231_3$treatment
+colnames(Count_293T_11000_1)<-meta_293T_3$treatment
+
+
+Count_231_10_Drug<-Count_231_10_XL_1[,-c(grep("JQ1",colnames(Count_231_10_XL_1)),grep("DMSO",colnames(Count_231_10_XL_1)))]
+Count_231_20_Drug<-Count_231_20_XL_1[,-c(grep("JQ1",colnames(Count_231_20_XL_1)),grep("DMSO",colnames(Count_231_20_XL_1)))]
+Count_293T_10_Drug<-Count_293T_10_XL_1[,-c(grep("JQ1",colnames(Count_293T_10_XL_1)),grep("DMSO",colnames(Count_293T_10_XL_1)))]
+Count_293T_20_Drug<-Count_293T_20_XL_1[,-c(grep("JQ1",colnames(Count_293T_20_XL_1)),grep("DMSO",colnames(Count_293T_20_XL_1)))]
+Count_231_11000_Drug<-Count_231_11000_1[,-c(grep("JQ1",colnames(Count_231_11000_1)),grep("DMSO",colnames(Count_231_11000_1)))]
+Count_293T_11000_Drug<-Count_293T_11000_1[,-c(grep("JQ1",colnames(Count_293T_11000_1)),grep("DMSO",colnames(Count_293T_11000_1)))]
+#retain the drugs with 3 replicates samples
+Sample_3R_231_10<-names(table(meta_231_10_XL_2$Treat))[which(table(meta_231_10_XL_2$Treat)==3)]
+Sample_3R_231_20<-names(table(meta_231_20_XL_2$Treat))[which(table(meta_231_20_XL_2$Treat)==3)]
+Sample_3R_293T_10<-names(table(meta_293T_10_XL_2$Treat))[which(table(meta_293T_10_XL_2$Treat)==3)]
+Sample_3R_293T_20<-names(table(meta_293T_20_XL_2$Treat))[which(table(meta_293T_20_XL_2$Treat)==3)]
+Sample_3R_231_11000<-names(table(meta_231_3$treatment))[which(table(meta_231_3$treatment)==3)]
+Sample_3R_293T_11000<-names(table(meta_293T_3$treatment))[which(table(meta_293T_3$treatment)==3)]
+
+
+#
+FC_231_10_3R<-cbind(FC_231_10_DRUG[,Sample_3R_231_10],FC_231_10_JQ1)
+FC_231_20_3R<-cbind(FC_231_20_DRUG[,Sample_3R_231_20],FC_231_20_JQ1)
+FC_293T_10_3R<-cbind(FC_293T_10_DRUG[,Sample_3R_293T_10],FC_293T_10_JQ1)
+FC_293T_20_3R<-cbind(FC_293T_20_DRUG[,Sample_3R_293T_20],FC_293T_20_JQ1)
+FC_231_11000_3R<-cbind(FC_231_11000_Drug[,Sample_3R_231_11000],FC_231_11000_JQ1)
+FC_293T_11000_3R<-cbind(FC_293T_11000_Drug[,names(TAS_293T_11000_Drug_0.2)],FC_293T_11000_JQ1)
+
+
+FC_231<-cbind(FC_231_10_3R,FC_231_20_3R,FC_231_11000_3R[rownames(FC_231_10_3R),])
+FC_293T<-cbind(FC_293T_10_3R,FC_293T_20_3R,FC_293T_11000_3R[rownames(FC_231_10_3R),])
+
+
+#MDA-MB-231
+breaks<-c(-5,-4,-3,seq(-2,-1,0.2),seq(1,2,0.2),3,4,5)
+FC_231_2488<-FC_231[Gene_filtered,]
+FC_231_2488<-FC_231_2488[complete.cases(FC_231_2488),]
+FC_231_2488<-as.matrix(FC_231_2488)
+heatmap.2(FC_231_2488, 
+          dendrogram = "both",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = rev(colorRampPalette(c("firebrick3","white", "navy" ))(17)),  # Adjust color palette
+          main = "Heatmap for FC (231_13000)",
+          key = TRUE,breaks = breaks,labRow=NULL,labCol = NULL) 
+
+#HEK293T
+breaks<-c(-5,-4,-3,seq(-2,2,0.2),3,4,5)
+FC_293T_2488<-FC_293T[Gene_filtered,]
+FC_293T_2488<-FC_293T_2488[complete.cases(FC_293T_2488),]
+FC_293T_2488<-as.matrix(FC_293T_2488)
+heatmap.2(FC_293T_2488, 
+          dendrogram = "both",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = rev(colorRampPalette(c("firebrick3","white", "navy" ))(26)),  # Adjust color palette
+          main = "Heatmap for FC (293T_13000)",
+          key = TRUE,breaks = breaks,labRow=NULL,labCol = NULL) 
+
+
+```
+

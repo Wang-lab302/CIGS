@@ -1,0 +1,29 @@
+---
+title: "Compare the readcount with UMI"
+output: html_document
+
+---
+
+```{r}
+library(gplots)
+
+Read_read<-read.csv("20231120-3-reads VS reads.csv",header=T,row.names = 1)
+UMI_UMI<-read.csv("20231120-3-UMI VS UMI.csv",header=T,row.names = 1)
+colnames(Read_read)<-colnames(UMI_UMI)
+
+heatmap.2(cor(log2(Read_read+1)), Rowv = F,Colv  = F,
+          dendrogram = "none",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = colorRampPalette(c("MistyRose","Salmon", "Firebrick4" ))(40),  # Adjust color palette
+          main = "Correlation ",
+          key = TRUE,breaks = seq(0.940,0.980,0.001),labRow=NULL,labCol = NULL,cexCol = 0.5,cexRow = 0.5,symm=FALSE)
+
+heatmap.2(cor(log2(UMI_UMI+1)),Rowv = F,Colv  = F,
+          dendrogram = "none",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = colorRampPalette(c("MistyRose","Salmon", "Firebrick4" ))(40),  # Adjust color palette
+          main = "Correlation ",
+          key = TRUE,breaks = seq(0.940,0.980,0.001),labRow=NULL,labCol = NULL,cexCol = 0.5,cexRow = 0.5,symm=FALSE)
+```
+
+
