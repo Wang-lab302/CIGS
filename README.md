@@ -1,8 +1,11 @@
 
 We run the analysis in the following R environment and package versions:
+
 R version 4.3.2 (2023-10-31)
+
 Platform: x86_64-conda-linux-gnu (64-bit)
-o install the R packages needed for our analysis you can run the following:
+
+To install the R packages needed for our analysis you can run the following:
 
 install.packages(
     c(
