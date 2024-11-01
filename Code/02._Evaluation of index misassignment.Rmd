@@ -1,0 +1,46 @@
+---
+title: "Evaluation of index misassignment"
+output: html_document
+
+---
+
+```{r}
+library(gplots)
+library(ggpubr)
+#Calculate the correlation between two samples
+#Correlation scatter plot for DMSO samples in MDA-MB-231 independentlibrary and HepG2 independent library
+Index_H_B_independence<-read.csv("20231130-1-1-Index_H_B.csv",header = T)
+#ggscatter plot
+ggscatter(Index_H_B_independence, x = "E_sample1_R1", y = "F_sample12_R1", add = "none",color="Sienna1",size = 1,xlab = "DMSO sample of 231 in independent library",ylab = "DMSO sample of HepG2 in independent library") +stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")), label.x = 1,label.y = 15)
+
+#Correlation scatter plot for DMSO samples in MDA-MB-231 independent library and MDA-MB-231 independent library
+Index_BI_BI<-read.csv("20231130-1-2-Index_BI_BI.csv",header = T)
+ggscatter(Index_BI_BI, x = "E_sample1_R1", y = "E_sample2_R1", add = "none",color="Sienna1",size = 1,xlab = "DMSO sample1 of 231 in independent library",ylab = "DMSO sample2 of 231 in independent library") +stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")), label.x = 0,label.y = 15)
+
+#Correlation scatter plot for DMSO samples in MDA-MB-231 independent library and MDA-MB-231 merged library with HepG2
+Index_BI_BM<-read.csv("20231130-1-3-Index-BI-BM.csv",header = T)
+ggscatter(Index_BI_BM, x = "E_sample1_R1", y = "G_sample30_R1", add = "none",color="Sienna1",size = 1,xlab = "DMSO sample of 231 in independent library",ylab = "DMSO sample of 231 in merged library") +stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")), label.x = 1,label.y = 15)
+
+#Correlation scatter plot for DMSO samples in HepG2 independent library and HepG2 independent library
+Index_HI_HI<-read.csv("20231130-1-4-Index-HI_HI.csv",header = T)
+ggscatter(Index_HI_HI, x = "F_sample12_R1", y = "F_sample13_R1", add = "none",color="Sienna1",size = 1,xlab = "DMSO sample1 of HepG2 in independent library",ylab = "DMSO sample2 of HepG2 in independent library") +stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")), label.x = 1,label.y = 15)
+
+#Correlation scatter plot for DMSO samples in HepG2 independent library and HepG2 merged library with MDA-MB-231
+Index_HI_HM<-read.csv("20231130-1-5-Index_HI_HM.csv",header = T)
+ggscatter(Index_HI_HM, x = "F_sample12_R1", y = "H_sample40_R1", add = "none",color="Sienna1",size = 1,xlab = "DMSO sample of HepG2 in independent library",ylab = "DMSO sample of HepG2 in merged library") +stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")), label.x = 1,label.y = 15)
+
+##Calculate the correlation among multiple samples
+Index_231<-read.csv("20231120-2-Index_231_20Samples.csv",header = T,row.names = 1)
+Index_HepG2<-read.csv("20231120-2-Index_HepG2_20Samples.csv",header = T,row.names = 1)
+Index_merge<-cbind(Index_231,Index_HepG2)
+heatmap.2(cor(log2(Index_merge+1)),
+          dendrogram = "none",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = colorRampPalette(c("MistyRose","Salmon", "Firebrick4" ))(61), 
+          main = "Index Correlation (231+HepG2) ",
+          key = TRUE,breaks=c(seq(0.800,0.830,0.001),seq(0.950,0.980,0.001)),labRow=NULL,
+          labCol = NULL,cexCol = 0.6,cexRow = 0.6,symm=FALSE,RowSideColors=c(rep("IndianRed",20),rep("Coral",20)),ColSideColors=c("OliveDrab","OliveDrab","OliveDrab","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","OliveDrab","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon","OliveDrab","LemonChiffon","LemonChiffon","LemonChiffon","LemonChiffon"))
+legend("topright",legend = c("Independence","Merge"),col = c("OliveDrab","LemonChiffon"), lty= 1,lwd = 5,cex=.7)
+legend("topright",legend = c("MDA-MB-231","HepG2"),col = c("IndianRed","Coral"), lty= 1,lwd = 5,cex=.7)
+
+```

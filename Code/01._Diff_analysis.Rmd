@@ -1,0 +1,409 @@
+---
+title: "Differentially expressed analysis"
+output: html_document
+---
+
+```{r}
+library(DESeq2)
+#TCM_Compounds_MDA_MB_231_10
+Dir_231_10<-"20230822_231_10_DESeq2"
+FC_231_10_Drug<-matrix(0,3407,length(unique(meta_231_10_XL_2$Treat))-2);
+FC_231_10_JQ1<-matrix(0,3407,20);
+pvalue_231_10_Drug<-matrix(0,3407,length(unique(meta_231_10_XL_2$Treat))-2);
+pvalue_231_10_JQ1<-matrix(0,3407,20);
+DEG_num_231_10<-matrix(0,(length(unique(meta_231_10_XL_2$Treat))-2),1)
+k=1
+l=1
+if (!file.exists(Dir_231_10)) dir.create(Dir_231_10)
+for(j in 1: 20){
+  Counts<-t(Count_231_10_XL_1[meta_231_10_XL_2[meta_231_10_XL_2$Plate==unique(meta_231_10_XL_2$Plate)[j],]$Sample_unique_id,])
+  colnames(Counts)<-meta_231_10_XL_2[meta_231_10_XL_2$Plate==unique(meta_231_10_XL_2$Plate)[j],]$Treat
+  Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
+  Counts_JQ1<-Counts[,which(colnames(Counts)=="JQ1")]
+  Counts_Drug<-Counts[,which(colnames(Counts)!="JQ1")][,which(colnames(Counts[,which(colnames(Counts)!="JQ1")])!="DMSO")]
+  for (i in 1:length(unique(colnames(Counts_Drug)))) {
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep( unique(colnames(Counts_Drug))[i],table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])),levels=c("DMSO",unique(colnames(Counts_Drug))[i]))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]]))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_Drug[,which(colnames(Counts_Drug)==unique(colnames(Counts_Drug))[i])])
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
+  FC_231_10_Drug[,k]<-res$log2FoldChange
+  pvalue_231_10_Drug[,k]<-res$pvalue
+  write.csv(res,paste0(Dir_231_10,"/",unique(meta_231_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  DEG_num_231_10[k,]<-nrow(DEG)
+  write.csv(DEG,file = paste0(Dir_231_10,"/", unique(meta_231_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+   k=k+1
+   i=i+1
+  }
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep("JQ1",ncol(Counts_JQ1))),levels=c("DMSO","JQ1"))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1)))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_JQ1)
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1))))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition","JQ1","DMSO"))
+  FC_231_10_JQ1[,l]<-res$log2FoldChange
+  pvalue_231_10_JQ1[,l]<-res$pvalue
+  l=l+1
+  res=res[order(res$pvalue),]
+  write.csv(res,paste0(Dir_231_10, "/",unique(meta_231_10_XL_2$Plate)[j],"_JQ1_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  write.csv(DEG,file = paste0(Dir_231_10,"/",unique(meta_231_10_XL_2$Plate)[j], "_JQ1_DESeq2_DEG.csv"))
+  j=j+1
+}
+meta_231_10_XL_3<-meta_231_10_XL_2[meta_231_10_XL_2$Treat!="DMSO",]
+meta_231_10_XL_3<-meta_231_10_XL_3[meta_231_10_XL_3$Treat!="JQ1",]
+Name<-c()
+for(j in 1: 20){
+  name<-unique(meta_231_10_XL_3[meta_231_10_XL_3$Plate==unique(meta_231_10_XL_3$Plate)[j],]$Treat)
+j=j+1
+Name<-c(Name,name)
+}
+row.names(FC_231_10_Drug)<-row.names(Counts)
+colnames(FC_231_10_Drug)<-Name
+row.names(FC_231_10_JQ1)<-row.names(Counts)
+colnames(FC_231_10_JQ1)<-unique(meta_231_10_XL_2$Plate)
+row.names(pvalue_231_10_Drug)<-row.names(Counts)
+colnames(pvalue_231_10_Drug)<-Name
+row.names(pvalue_231_10_JQ1)<-row.names(Counts)
+colnames(pvalue_231_10_JQ1)<-unique(meta_231_10_XL_2$Plate)
+FC_231_10<-cbind(FC_231_10_Drug,FC_231_10_JQ1)
+write.csv(FC_231_10,paste0(Dir_231_10, "/20230822-FC_231_10_merge.csv"))
+pvalue_231_10<-cbind(pvalue_231_10_Drug,pvalue_231_10_JQ1)
+write.csv(pvalue_231_10,paste0(Dir_231_10, "/20230822-Pvalue_231_10_merge.csv"))
+row.names(DEG_num_231_10)<-Name
+write.csv(DEG_num_231_10,paste0(Dir_231_10, "/20230822-DEG_num_231_10.csv"))
+
+
+#TCM_Compounds_MDA_MB_231_20
+Dir_231_20<-"20230822_231_20_DESeq2"
+FC_231_20_Drug<-matrix(0,3407,length(unique(meta_231_20_XL_2$Treat))-2);
+FC_231_20_JQ1<-matrix(0,3407,20);
+pvalue_231_20_Drug<-matrix(0,3407,length(unique(meta_231_20_XL_2$Treat))-2);
+pvalue_231_20_JQ1<-matrix(0,3407,20);
+DEG_num_231_20<-matrix(0,(length(unique(meta_231_20_XL_2$Treat))-2),1)
+k=1
+l=1
+if (!file.exists(Dir_231_20)) dir.create(Dir_231_20)
+for(j in 1: 20){
+  Counts<-t(Count_231_20_XL_1[meta_231_20_XL_2[meta_231_20_XL_2$Plate==unique(meta_231_20_XL_2$Plate)[j],]$Sample_unique_id,])
+  colnames(Counts)<-meta_231_20_XL_2[meta_231_20_XL_2$Plate==unique(meta_231_20_XL_2$Plate)[j],]$Treat
+  Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
+  Counts_JQ1<-as.matrix(Counts[,which(colnames(Counts)=="JQ1")])
+  Counts_Drug<-Counts[,which(colnames(Counts)!="JQ1")][,which(colnames(Counts[,which(colnames(Counts)!="JQ1")])!="DMSO")]
+  for (i in 1:length(unique(colnames(Counts_Drug)))) {
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep( unique(colnames(Counts_Drug))[i],table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])),levels=c("DMSO",unique(colnames(Counts_Drug))[i]))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]]))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_Drug[,which(colnames(Counts_Drug)==unique(colnames(Counts_Drug))[i])])
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
+  FC_231_20_Drug[,k]<-res$log2FoldChange
+  pvalue_231_20_Drug[,k]<-res$pvalue
+  write.csv(res,paste0(Dir_231_20,"/",unique(meta_231_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  DEG_num_231_20[k,]<-nrow(DEG)
+  write.csv(DEG,file = paste0(Dir_231_20,"/", unique(meta_231_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+   k=k+1
+   i=i+1
+  }
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep("JQ1",ncol(Counts_JQ1))),levels=c("DMSO","JQ1"))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1)))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_JQ1)
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1))))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition","JQ1","DMSO"))
+  FC_231_20_JQ1[,l]<-res$log2FoldChange
+  pvalue_231_20_JQ1[,l]<-res$pvalue
+  l=l+1
+  res=res[order(res$pvalue),]
+  write.csv(res,paste0(Dir_231_20, "/",unique(meta_231_20_XL_2$Plate)[j],"_JQ1_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  write.csv(DEG,file = paste0(Dir_231_20,"/",unique(meta_231_20_XL_2$Plate)[j], "_JQ1_DESeq2_DEG.csv"))
+  j=j+1
+}
+meta_231_20_XL_3<-meta_231_20_XL_2[meta_231_20_XL_2$Treat!="DMSO",]
+meta_231_20_XL_3<-meta_231_20_XL_3[meta_231_20_XL_3$Treat!="JQ1",]
+Name<-c()
+name<-c()
+for(j in 1: 20){
+  name<-unique(meta_231_20_XL_3[meta_231_20_XL_3$Plate==unique(meta_231_20_XL_3$Plate)[j],]$Treat)
+j=j+1
+Name<-c(Name,name)
+}
+row.names(FC_231_20_Drug)<-row.names(Counts)
+colnames(FC_231_20_Drug)<-Name
+row.names(FC_231_20_JQ1)<-row.names(Counts)
+colnames(FC_231_20_JQ1)<-unique(meta_231_20_XL_2$Plate)
+row.names(pvalue_231_20_Drug)<-row.names(Counts)
+colnames(pvalue_231_20_Drug)<-Name
+row.names(pvalue_231_20_JQ1)<-row.names(Counts)
+colnames(pvalue_231_20_JQ1)<-unique(meta_231_20_XL_2$Plate)
+FC_231_20<-cbind(FC_231_20_Drug,FC_231_20_JQ1)
+write.csv(FC_231_20,paste0(Dir_231_20, "/20230822-FC_231_20_merge.csv"))
+pvalue_231_20<-cbind(pvalue_231_20_Drug,pvalue_231_20_JQ1)
+write.csv(pvalue_231_20,paste0(Dir_231_20, "/20230822-Pvalue_231_20_merge.csv"))
+row.names(DEG_num_231_20)<-Name
+write.csv(DEG_num_231_20,paste0(Dir_231_20, "/20230822-DEG_num_231_20.csv"))
+
+
+##TCM_Compounds_HEK293T_10
+Dir_293T_10<-"20230822_293T_10_DESeq2"
+FC_293T_10_Drug<-matrix(0,3407,length(unique(meta_293T_10_XL_2$Treat))-2);
+FC_293T_10_JQ1<-matrix(0,3407,20);
+pvalue_293T_10_Drug<-matrix(0,3407,length(unique(meta_293T_10_XL_2$Treat))-2);
+pvalue_293T_10_JQ1<-matrix(0,3407,20);
+DEG_num_293T_10<-matrix(0,(length(unique(meta_293T_10_XL_2$Treat))-2),1)
+k=1
+l=1
+if (!file.exists(Dir_293T_10)) dir.create(Dir_293T_10)
+for(j in 1: 20){
+  Counts<-t(Count_293T_10_XL_1[meta_293T_10_XL_2[meta_293T_10_XL_2$Plate==unique(meta_293T_10_XL_2$Plate)[j],]$Sample_unique_id,])
+  colnames(Counts)<-meta_293T_10_XL_2[meta_293T_10_XL_2$Plate==unique(meta_293T_10_XL_2$Plate)[j],]$Treat
+  Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
+  Counts_JQ1<-Counts[,which(colnames(Counts)=="JQ1")]
+  Counts_Drug<-Counts[,which(colnames(Counts)!="JQ1")][,which(colnames(Counts[,which(colnames(Counts)!="JQ1")])!="DMSO")]
+  for (i in 1:length(unique(colnames(Counts_Drug)))) {
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep( unique(colnames(Counts_Drug))[i],table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])),levels=c("DMSO",unique(colnames(Counts_Drug))[i]))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]]))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_Drug[,which(colnames(Counts_Drug)==unique(colnames(Counts_Drug))[i])])
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
+  FC_293T_10_Drug[,k]<-res$log2FoldChange
+  pvalue_293T_10_Drug[,k]<-res$pvalue
+  write.csv(res,paste0(Dir_293T_10,"/",unique(meta_293T_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  DEG_num_293T_10[k,]<-nrow(DEG)
+  write.csv(DEG,file = paste0(Dir_293T_10,"/", unique(meta_293T_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+   k=k+1
+   i=i+1
+  }
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep("JQ1",ncol(Counts_JQ1))),levels=c("DMSO","JQ1"))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1)))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_JQ1)
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1))))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition","JQ1","DMSO"))
+  FC_293T_10_JQ1[,l]<-res$log2FoldChange
+  pvalue_293T_10_JQ1[,l]<-res$pvalue
+  l=l+1
+  res=res[order(res$pvalue),]
+  write.csv(res,paste0(Dir_293T_10, "/",unique(meta_293T_10_XL_2$Plate)[j],"_JQ1_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  write.csv(DEG,file = paste0(Dir_293T_10,"/",unique(meta_293T_10_XL_2$Plate)[j], "_JQ1_DESeq2_DEG.csv"))
+  j=j+1
+}
+meta_293T_10_XL_3<-meta_293T_10_XL_2[meta_293T_10_XL_2$Treat!="DMSO",]
+meta_293T_10_XL_3<-meta_293T_10_XL_3[meta_293T_10_XL_3$Treat!="JQ1",]
+Name<-c()
+name<-c()
+for(j in 1: 20){
+  name<-unique(meta_293T_10_XL_3[meta_293T_10_XL_3$Plate==unique(meta_293T_10_XL_3$Plate)[j],]$Treat)
+j=j+1
+Name<-c(Name,name)
+}
+row.names(FC_293T_10_Drug)<-row.names(Counts)
+colnames(FC_293T_10_Drug)<-Name
+row.names(FC_293T_10_JQ1)<-row.names(Counts)
+colnames(FC_293T_10_JQ1)<-unique(meta_293T_10_XL_2$Plate)
+row.names(pvalue_293T_10_Drug)<-row.names(Counts)
+colnames(pvalue_293T_10_Drug)<-Name
+row.names(pvalue_293T_10_JQ1)<-row.names(Counts)
+colnames(pvalue_293T_10_JQ1)<-unique(meta_293T_10_XL_2$Plate)
+FC_293T_10<-cbind(FC_293T_10_Drug,FC_293T_10_JQ1)
+write.csv(FC_293T_10,paste0(Dir_293T_10, "/20230822-FC_293T_10_merge.csv"))
+pvalue_293T_10<-cbind(pvalue_293T_10_Drug,pvalue_293T_10_JQ1)
+write.csv(pvalue_293T_10,paste0(Dir_293T_10, "/20230822-Pvalue_293T_10_merge.csv"))
+row.names(DEG_num_293T_10)<-Name
+write.csv(DEG_num_293T_10,paste0(Dir_293T_10, "/20230822-DEG_num_293T_10.csv"))
+
+
+##TCM_Compounds_HEK293T_20
+Dir_293T_20<-"20230822_293T_20_DESeq2"
+FC_293T_20_Drug<-matrix(0,3407,length(unique(meta_293T_20_XL_2$Treat))-2);
+FC_293T_20_JQ1<-matrix(0,3407,20);
+pvalue_293T_20_Drug<-matrix(0,3407,length(unique(meta_293T_20_XL_2$Treat))-2);
+pvalue_293T_20_JQ1<-matrix(0,3407,20);
+DEG_num_293T_20<-matrix(0,(length(unique(meta_293T_20_XL_2$Treat))-2),1)
+k=1
+l=1
+if (!file.exists(Dir_293T_20)) dir.create(Dir_293T_20)
+for(j in 1: 20){
+  Counts<-t(Count_293T_20_XL_1[meta_293T_20_XL_2[meta_293T_20_XL_2$Plate==unique(meta_293T_20_XL_2$Plate)[j],]$Sample_unique_id,])
+  colnames(Counts)<-meta_293T_20_XL_2[meta_293T_20_XL_2$Plate==unique(meta_293T_20_XL_2$Plate)[j],]$Treat
+  Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
+  Counts_JQ1<-Counts[,which(colnames(Counts)=="JQ1")]
+  Counts_Drug<-Counts[,which(colnames(Counts)!="JQ1")][,which(colnames(Counts[,which(colnames(Counts)!="JQ1")])!="DMSO")]
+  for (i in 1:length(unique(colnames(Counts_Drug)))) {
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep( unique(colnames(Counts_Drug))[i],table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])),levels=c("DMSO",unique(colnames(Counts_Drug))[i]))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]]))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_Drug[,which(colnames(Counts_Drug)==unique(colnames(Counts_Drug))[i])])
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Drug))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Drug))[i]][[1]])))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
+  FC_293T_20_Drug[,k]<-res$log2FoldChange
+  pvalue_293T_20_Drug[,k]<-res$pvalue
+  write.csv(res,paste0(Dir_293T_20,"/",unique(meta_293T_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  DEG_num_293T_20[k,]<-nrow(DEG)
+  write.csv(DEG,file = paste0(Dir_293T_20,"/", unique(meta_293T_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+   k=k+1
+   i=i+1
+  }
+  condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep("JQ1",ncol(Counts_JQ1))),levels=c("DMSO","JQ1"))
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1)))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_JQ1)
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0("JQ1_",rep(1:ncol(Counts_JQ1))))
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition","JQ1","DMSO"))
+  FC_293T_20_JQ1[,l]<-res$log2FoldChange
+  pvalue_293T_20_JQ1[,l]<-res$pvalue
+  l=l+1
+  res=res[order(res$pvalue),]
+  write.csv(res,paste0(Dir_293T_20, "/",unique(meta_293T_20_XL_2$Plate)[j],"_JQ1_DESeq2_DEG_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+  write.csv(DEG,file = paste0(Dir_293T_20,"/",unique(meta_293T_20_XL_2$Plate)[j], "_JQ1_DESeq2_DEG.csv"))
+  j=j+1
+}
+meta_293T_20_XL_3<-meta_293T_20_XL_2[meta_293T_20_XL_2$Treat!="DMSO",]
+meta_293T_20_XL_3<-meta_293T_20_XL_3[meta_293T_20_XL_3$Treat!="JQ1",]
+Name<-c()
+name<-c()
+for(j in 1: 20){
+  name<-unique(meta_293T_20_XL_3[meta_293T_20_XL_3$Plate==unique(meta_293T_20_XL_3$Plate)[j],]$Treat)
+j=j+1
+Name<-c(Name,name)
+}
+row.names(FC_293T_20_Drug)<-row.names(Counts)
+colnames(FC_293T_20_Drug)<-Name
+row.names(FC_293T_20_JQ1)<-row.names(Counts)
+colnames(FC_293T_20_JQ1)<-unique(meta_293T_20_XL_2$Plate)
+row.names(pvalue_293T_20_Drug)<-row.names(Counts)
+colnames(pvalue_293T_20_Drug)<-Name
+row.names(pvalue_293T_20_JQ1)<-row.names(Counts)
+colnames(pvalue_293T_20_JQ1)<-unique(meta_293T_20_XL_2$Plate)
+FC_293T_20<-cbind(FC_293T_20_Drug,FC_293T_20_JQ1)
+write.csv(FC_293T_20,paste0(Dir_293T_20, "/20230822-FC_293T_20_merge.csv"))
+pvalue_293T_20<-cbind(pvalue_293T_20_Drug,pvalue_293T_20_JQ1)
+write.csv(pvalue_293T_20,paste0(Dir_293T_20, "/20230822-Pvalue_293T_20_merge.csv"))
+row.names(DEG_num_293T_20)<-Name
+write.csv(DEG_num_293T_20,paste0(Dir_293T_20, "/20230822-DEG_num_293T_20.csv"))
+
+
+#MCE_Bioactive_Compounds_MDA_MB_231_10μM
+Dir_231<-"20230822_231_DESeq2"
+k=1
+FC_231<-matrix(0,3407,length(unique(meta_231_3$treatment))+(length(unique(meta_231_3$sample_plate))/3)-1);
+pvalue_231<-matrix(0,3407,length(unique(meta_231_3$treatment))+(length(unique(meta_231_3$sample_plate))/3)-1);
+if (!file.exists(Dir_231)) dir.create(Dir_231)
+for(j in 1: 35){
+  Counts<-t(Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,1:3407])
+  colnames(Counts)<-Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,]$treatment
+  Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
+  Counts_Treat<-Counts[,which(colnames(Counts)!="DMSO")]
+  for (i in 1:length(unique(colnames(Counts_Treat)))) {
+    condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep( unique(colnames(Counts_Treat))[i],table(colnames(Counts))[unique(colnames(Counts_Treat))[i]][[1]])),levels=c("DMSO",unique(colnames(Counts_Treat))[i]))
+    
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Treat))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Treat))[i]][[1]]))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_Treat[,which(colnames(Counts_Treat)==unique(colnames(Counts_Treat))[i])])
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Treat))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Treat))[i]][[1]])))
+  
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition",unique(colnames(Counts_Treat))[i],"DMSO"))
+  FC_231[,k]<-res$log2FoldChange
+  pvalue_231[,k]<-res$pvalue
+  k=k+1
+  write.csv(res,paste0(Dir_231,"/",unique(Count_231_2$Plate)[j],"_",unique(colnames(Counts_Treat))[i],"_DESeq2_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+   write.csv(DEG,paste0(Dir_231,"/",unique(Count_231_2$Plate)[j],"_",unique(colnames(Counts_Treat))[i],"_DESeq2_DEG.csv"))
+   i=i+1
+  }
+  j=j+1
+}
+
+Treat_Name<-c()
+for(j in 1: 35){
+  Counts<-t(Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,1:3407])
+  colnames(Counts)<-Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,]$treatment
+  Counts_Treat<-Counts[,which(colnames(Counts)!="DMSO")]
+  Treat_Name<-c(Treat_Name,unique(colnames(Counts_Treat)))
+  j=j+1
+}
+colnames(FC_231)<-c(Treat_Name,rep("None",11173-11168))
+rownames(FC_231)<-colnames(Count_231)
+row.names(pvalue_231)<-colnames(Count_231)
+colnames(pvalue_231)<-c(Treat_Name,rep("None",11173-11168))
+write.csv(FC_231,paste0(Dir_231, "/20230427-FC_231_palte_merge.csv"))
+write.csv(pvalue_231,paste0(Dir_231, "/20230427-Pvalue_231_palte_merge.csv"))
+
+
+#MCE_Bioactive_Compounds_HEK293T_10μM
+Dir_293T<-"20230905_293T_DESeq2"
+k=1
+FC_293T<-matrix(0,3407,length(unique(meta_293T_4$treatment))+(length(unique(meta_293T_4$sample_plate))/3)-1);
+pvalue_293T<-matrix(0,3407,length(unique(meta_293T_4$treatment))+(length(unique(meta_293T_4$sample_plate))/3)-1);
+if (!file.exists(Dir_293T)) dir.create(Dir_293T)
+for(j in 1: 35){
+  Counts<-t(Count_293T_2[meta_293T_4[Count_293T_2$Plate==unique(Count_293T_2$Plate)[j],]$ID,1:3407])
+  colnames(Counts)<-Count_293T_2[meta_293T_4[Count_293T_2$Plate==unique(Count_293T_2$Plate)[j],]$ID,]$treatment
+  Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
+  Counts_Treat<-Counts[,which(colnames(Counts)!="DMSO")]
+  for (i in 1:length(unique(colnames(Counts_Treat)))) {
+    condition=factor(c(rep("DMSO",ncol(Counts_DMSO)),rep( unique(colnames(Counts_Treat))[i],table(colnames(Counts))[unique(colnames(Counts_Treat))[i]][[1]])),levels=c("DMSO",unique(colnames(Counts_Treat))[i]))
+    
+  colData<-data.frame(row.names=c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Treat))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Treat))[i]][[1]]))),condition)
+  myCounts<-cbind(Counts_DMSO,Counts_Treat[,which(colnames(Counts_Treat)==unique(colnames(Counts_Treat))[i])])
+  colnames(myCounts)<-c(paste0("DMSO_",rep(1:ncol(Counts_DMSO))),paste0(unique(colnames(Counts_Treat))[i],"_",rep(1:table(colnames(Counts))[unique(colnames(Counts_Treat))[i]][[1]])))
+  
+  dds<-DESeqDataSetFromMatrix(myCounts,colData = colData,design = ~condition)
+  dds<-estimateSizeFactors(dds)
+  dds<-DESeq(dds)
+  res=results(dds,contrast = c("condition",unique(colnames(Counts_Treat))[i],"DMSO"))
+  FC_293T[,k]<-res$log2FoldChange
+  pvalue_293T[,k]<-res$pvalue
+  k=k+1
+  write.csv(res,paste0(Dir_293T,"/",unique(Count_293T_2$Plate)[j],"_",unique(colnames(Counts_Treat))[i],"_DESeq2_All.csv"))
+  DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
+   write.csv(DEG,paste0(Dir_293T,"/",unique(Count_293T_2$Plate)[j],"_",unique(colnames(Counts_Treat))[i],"_DESeq2_DEG.csv"))
+   i=i+1
+  }
+  j=j+1
+}
+
+Treat_Name<-c()
+for(j in 1: 35){
+  Counts<-t(Count_293T_2[meta_293T_4[Count_293T_2$Plate==unique(Count_293T_2$Plate)[j],]$ID,1:3407])
+  colnames(Counts)<-Count_293T_2[meta_293T_4[Count_293T_2$Plate==unique(Count_293T_2$Plate)[j],]$ID,]$treatment
+  Counts_Treat<-Counts[,which(colnames(Counts)!="DMSO")]
+  Treat_Name<-c(Treat_Name,unique(colnames(Counts_Treat)))
+  j=j+1
+}
+colnames(FC_293T)<-c(Treat_Name,rep("None",1))
+rownames(FC_293T)<-colnames(Count_293T)
+row.names(pvalue_293T)<-colnames(Count_293T)
+colnames(pvalue_293T)<-c(Treat_Name,rep("None",1))
+write.csv(FC_293T[,-10928],paste0(Dir_293T, "/20230905-FC_293T_palte_merge.csv"))
+write.csv(pvalue_293T[,-10928],paste0(Dir_293T, "/20230905-Pvalue_293T_palte_merge.csv"))
+```
+
+
