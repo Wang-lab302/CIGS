@@ -1,0 +1,96 @@
+---
+title: "TSNE plots"
+output: html_document
+---
+
+#TSNE plots showing different MOA clusters identified in HEK293T cells datasetand MDA-MB-213 cells dataset
+```{r}
+library(Rtsne)
+#MDA-MB-231
+tSNE_FC_231<-t(FC_231)%>%as.data.frame()%>%select(where(is.numeric))%>%scale()%>%t()%>%as.data.frame()%>%drop_na()%>%t()%>%Rtsne(check_duplicates=F)
+tSNE_df_FC_231<-data.frame(tSNE1=tSNE_FC_231$Y[,1],tSNE2=tSNE_FC_231$Y[,2])
+##classify the JQ1
+tSNE_df_FC_231$class<-c(rep("DRUG",1846),rep("JQ1",20),rep("DRUG",1763),rep("JQ1",20),rep("DRUG",9501),rep("JQ1",29))
+tSNE_df_FC_231 %>%ggplot(aes(x = tSNE1, y = tSNE2,color = class))+geom_point(size=1)+theme(text = element_text(size = 8),legend.position="bottom")+theme_classic()+labs(title = "JQ1_Drug (MDA-MB-231)")+scale_color_manual(values=c("Gainsboro","CadetBlue"))
+#cluster
+library(plyr)
+hclust_231_result <- hclust(dist(tSNE_df_FC_231[,c("tSNE1","tSNE2")]),method = "ward.D2")
+tSNE_df_FC_231$cluster <- as.factor(cutree(hclust_231_result, k = 100) )
+df_label_231<- dplyr::summarise(group_by(tSNE_df_FC_231, cluster), 
+                      x_pos = mean(tSNE1), 
+                      y_pos = mean(tSNE2))
+ggplot(tSNE_df_FC_231, aes(x = tSNE1, y = tSNE2, color = cluster)) +
+  geom_point(size = 1)  +scale_color_manual(values =rainbow(100) ) +labs(title = "t-SNE Clustering (MDA-MB-231)") +theme_minimal()+geom_text(aes(x_pos, y_pos, label = cluster), data = df_label_231, size = 5,color="Black")
+
+#JQ1 cluster
+Cluster_33_JQ1_231_info<-read.csv("20241113-3-JQ1-cluster-33_231.csv",header=T)
+ggplot(Cluster_33_JQ1_231_info, aes(x = tSNE1, y = tSNE2)) +
+  geom_point(aes(color=class),size=2)  +
+  scale_color_manual(values=c("#93cc82","#4d97cd","#bdc3d2"))+
+  labs(title = "t-SNE Cluster_JQ1 (Fold change) (MDA-MB-231)") +
+  theme_bw() +guides(colour = guide_legend(override.aes = list(size = 3)))+ theme_bw()+theme_classic()+geom_text(data=Cluster_33_JQ1_231_info[Cluster_33_JQ1_231_info$Drug=="HY_N0546",],aes(label=Drug),position = position_nudge(y = 0.2),color="Black")
+
+#Label the drugs with known MOA
+Label_Target_231<-read.csv("20241113-3-231-Label.csv",header = T)
+tSNE_df_FC_231$Label2<-Label_Target_231$Label3
+tSNE_df_FC_231$Label3<-Label_Target_231$Label5
+tSNE_df_FC_231$Drug1<-Label_Target_231$Label4
+tSNE_df_FC_231_1<-tSNE_df_FC_231[order(tSNE_df_FC_231$Label3,decreasing = F),]
+Label3_231<-subset(tSNE_df_FC_231_1, Label3 == 'YES')
+
+tSNE_df_FC_231_1 %>%ggplot(aes(x = tSNE1, y = tSNE2,color = Label3,aplha=Label3))+geom_point(alpha=0.7)+theme(text = element_text(size = 8),legend.position="bottom")+theme_bw()+labs(title = "MDA-MB-231")+scale_color_manual(values=c("MistyRose","IndianRed"))+scale_size_manual(values=c(2,3))+geom_text(aes(label=Drug1),data=Label3_231,size=1,colour="black",nudge_y=2,alpha = 0.5)
+
+tSNE_df_FC_231_1 %>%ggplot(aes(x = tSNE1, y = tSNE2,color = Label3,aplha=Label3))+geom_point(alpha=0.7)+theme(text = element_text(size = 8),legend.position="bottom")+theme_classic()+labs(title = "MDA-MB-231")+scale_color_manual(values=c("MistyRose","IndianRed"))+scale_size_manual(values=c(2,3))+geom_text(aes(label=Drug),data=Label3_231,size=1,colour="black",nudge_y=2,alpha = 0.5)
+
+
+
+
+#HEK293T
+tSNE_FC_293T<-t(FC_293T)%>%as.data.frame()%>%select(where(is.numeric))%>%scale()%>%t()%>%as.data.frame()%>%drop_na()%>%t()%>%Rtsne(check_duplicates=F)
+tSNE_df_FC_293T<-data.frame(tSNE1=tSNE_FC_293T$Y[,1],tSNE2=tSNE_FC_293T$Y[,2])
+##classify JQ1
+tSNE_df_FC_293T$class<-c(rep("DRUG",1821),rep("JQ1",20),rep("DRUG",1753),rep("JQ1",20),rep("DRUG",9072),rep("JQ1",32))
+tSNE_df_FC_293T %>%ggplot(aes(x = tSNE1, y = tSNE2,color = class))+geom_point(size=1)+theme(text = element_text(size = 8),legend.position="bottom")+theme_classic()+labs(title = "JQ1_Drug (293T_2488 gene)")+scale_color_manual(values=c("Gainsboro","CadetBlue"))
+
+#cluster
+hclust_293T_result <- hclust(dist(tSNE_df_FC_293T[,c("tSNE1","tSNE2")]),method = "ward.D2")
+tSNE_df_FC_293T$cluster <- as.factor(cutree(hclust_293T_result, k = 150) )#150 clusters
+df_label_231<- dplyr::summarise(group_by(tSNE_df_FC_293T, cluster), 
+                      x_pos = mean(tSNE1), 
+                      y_pos = mean(tSNE2))
+ggplot(tSNE_df_FC_293T, aes(x = tSNE1, y = tSNE2, color = cluster)) +
+  geom_point(size = 1)  +scale_color_manual(values =rainbow(150) ) +labs(title = "t-SNE Clustering (HEK293T)") +theme_minimal()+geom_text(aes(x_pos, y_pos, label = cluster), data = df_label_231, size = 3,color="black")
+
+
+tSNE_df_FC_293T$cluster_100 <- as.factor(cutree(hclust_293T_result, k = 100) )#100 clusters
+df_label_231<- dplyr::summarise(group_by(tSNE_df_FC_293T, cluster_100), 
+                      x_pos = mean(tSNE1), 
+                      y_pos = mean(tSNE2))
+ggplot(tSNE_df_FC_293T, aes(x = tSNE1, y = tSNE2, color = cluster_100)) +
+  geom_point(size = 1)  +scale_color_manual(values =rainbow(100) ) +labs(title = "t-SNE Clustering (HEK293T)") +theme_minimal()+geom_text(aes(x_pos, y_pos, label = cluster_100), data = df_label_231, size = 3,color="black")
+
+
+#JQ1 cluster
+Cluster_51_JQ1_293T_info<-read.csv("20241113-4-JQ1-cluster-51_293T.csv",header=T)
+ggplot(Cluster_51_JQ1_293T_info, aes(x = tSNE1, y = tSNE2)) +
+  geom_point(aes(color=class),size=2)  +
+  scale_color_manual(values=c("#93cc82","#4d97cd","#bdc3d2"))+
+  labs(title = "t-SNE Cluster_JQ1 (Fold change) (HEK293T)") +
+  theme_bw() +guides(colour = guide_legend(override.aes = list(size = 3)))+ theme_bw()+theme_classic()+geom_text(data=Cluster_51_JQ1_293T_info[Cluster_51_JQ1_293T_info$Drug=="HY_N0546",],aes(label=Drug),position = position_nudge(y = 0.2),color="Black")
+
+
+
+#Label the drugs with known MOA
+Label_Target<-read.csv("20241113-5-293T-Label.csv",header = T)
+tSNE_df_FC_293T$Label2<-Label_Target$Label2
+tSNE_df_FC_293T$Label3<-Label_Target$Label3
+tSNE_df_FC_293T$Drug1<-Label_Target$Label4
+tSNE_df_FC_293T_1<-tSNE_df_FC_293T[order(tSNE_df_FC_293T$Label3,decreasing = F),]
+Label3_293T<-subset(tSNE_df_FC_293T_1, Label3 == 'YES')
+tSNE_df_FC_293T_1 %>%ggplot(aes(x = tSNE1, y = tSNE2,color = Label3,aplha=Label3))+geom_point(alpha=0.7)+theme(text = element_text(size = 8),legend.position="bottom")+theme_bw()+labs(title = "HEK293T")+scale_color_manual(values=c("LightBlue","CadetBlue"))+scale_size_manual(values=c(2,3))+geom_text(aes(label=Drug1),data=Label3_293T,size=1,colour="black",nudge_y=2,alpha = 0.5)+theme_classic()
+
+tSNE_df_FC_293T_1 %>%ggplot(aes(x = tSNE1, y = tSNE2,color = Label3,aplha=Label3))+geom_point(alpha=0.7)+theme(text = element_text(size = 8),legend.position="bottom")+theme_bw()+labs(title = "HEK293T")+scale_color_manual(values=c("LightBlue","CadetBlue"))+scale_size_manual(values=c(2,3))+geom_text(aes(label=Drug),data=Label3_293T,size=1,colour="black",nudge_y=2,alpha = 0.5)+theme_classic()
+
+
+```
+

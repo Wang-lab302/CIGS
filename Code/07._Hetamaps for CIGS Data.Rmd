@@ -1,0 +1,27 @@
+---
+title: "Heatmap for CIGS Data"
+output: html_document
+date: "2024-11-01"
+---
+
+```{r}
+library(gplots)
+#MDA-MB-231
+breaks_1<-c(seq(-1,-0.1,0.01),seq(0.1,1,0.01))
+heatmap.2(FC_231, 
+          dendrogram = "both",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = rev(colorRampPalette(c("firebrick3","white", "navy" ))(181)),  # Adjust color palette
+          main = "Heatmap for FC (MDA-MB-231) ",
+          key = TRUE,breaks = breaks_1,labRow=NULL,labCol = NULL)
+
+#HEK293T
+heatmap.2(FC_293T, 
+          dendrogram = "both",  # Include row and column dendrograms (optional)
+          trace = "none",       # Turn off trace lines (optional)
+          col = rev(colorRampPalette(c("firebrick3","white", "navy" ))(181)),  # Adjust color palette
+          main = "Heatmap for FC (HEK293T)",
+          key = TRUE,breaks = breaks_1,labRow=NULL,labCol = NULL)
+
+```
+
