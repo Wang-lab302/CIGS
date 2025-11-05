@@ -314,7 +314,7 @@ k=1
 FC_231<-matrix(0,3407,length(unique(meta_231_3$treatment))+(length(unique(meta_231_3$sample_plate))/3)-1);
 pvalue_231<-matrix(0,3407,length(unique(meta_231_3$treatment))+(length(unique(meta_231_3$sample_plate))/3)-1);
 if (!file.exists(Dir_231)) dir.create(Dir_231)
-for(j in 1: 35){
+for(j in 1: 36){
   Counts<-t(Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,1:3407])
   colnames(Counts)<-Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,]$treatment
   Counts_DMSO<-Counts[,which(colnames(Counts)=="DMSO")]
@@ -342,7 +342,7 @@ for(j in 1: 35){
 }
 
 Treat_Name<-c()
-for(j in 1: 35){
+for(j in 1: 36){
   Counts<-t(Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,1:3407])
   colnames(Counts)<-Count_231_2[meta_231_3[Count_231_2$Plate==unique(Count_231_2$Plate)[j],]$ID,]$treatment
   Counts_Treat<-Counts[,which(colnames(Counts)!="DMSO")]
@@ -405,5 +405,6 @@ colnames(pvalue_293T)<-c(Treat_Name,rep("None",1))
 write.csv(FC_293T[,-10928],paste0(Dir_293T, "/20230905-FC_293T_palte_merge.csv"))
 write.csv(pvalue_293T[,-10928],paste0(Dir_293T, "/20230905-Pvalue_293T_palte_merge.csv"))
 ```
+
 
 
