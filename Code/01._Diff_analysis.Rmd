@@ -32,10 +32,10 @@ for(j in 1: 20){
   res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
   FC_231_10_Drug[,k]<-res$log2FoldChange
   pvalue_231_10_Drug[,k]<-res$pvalue
-  write.csv(res,paste0(Dir_231_10,"/",unique(meta_231_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  write.csv(res,paste0(Dir_231_10,"/",unique(meta_231_10_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG_All.csv"))
   DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
   DEG_num_231_10[k,]<-nrow(DEG)
-  write.csv(DEG,file = paste0(Dir_231_10,"/", unique(meta_231_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+  write.csv(DEG,file = paste0(Dir_231_10,"/", unique(meta_231_10_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG.csv"))
    k=k+1
    i=i+1
   }
@@ -107,10 +107,10 @@ for(j in 1: 20){
   res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
   FC_231_20_Drug[,k]<-res$log2FoldChange
   pvalue_231_20_Drug[,k]<-res$pvalue
-  write.csv(res,paste0(Dir_231_20,"/",unique(meta_231_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  write.csv(res,paste0(Dir_231_20,"/",unique(meta_231_20_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG_All.csv"))
   DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
   DEG_num_231_20[k,]<-nrow(DEG)
-  write.csv(DEG,file = paste0(Dir_231_20,"/", unique(meta_231_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+  write.csv(DEG,file = paste0(Dir_231_20,"/", unique(meta_231_20_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG.csv"))
    k=k+1
    i=i+1
   }
@@ -183,10 +183,10 @@ for(j in 1: 20){
   res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
   FC_293T_10_Drug[,k]<-res$log2FoldChange
   pvalue_293T_10_Drug[,k]<-res$pvalue
-  write.csv(res,paste0(Dir_293T_10,"/",unique(meta_293T_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  write.csv(res,paste0(Dir_293T_10,"/",unique(meta_293T_10_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG_All.csv"))
   DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
   DEG_num_293T_10[k,]<-nrow(DEG)
-  write.csv(DEG,file = paste0(Dir_293T_10,"/", unique(meta_293T_10_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+  write.csv(DEG,file = paste0(Dir_293T_10,"/", unique(meta_293T_10_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG.csv"))
    k=k+1
    i=i+1
   }
@@ -259,10 +259,10 @@ for(j in 1: 20){
   res=results(dds,contrast = c("condition",unique(colnames(Counts_Drug))[i],"DMSO"))
   FC_293T_20_Drug[,k]<-res$log2FoldChange
   pvalue_293T_20_Drug[,k]<-res$pvalue
-  write.csv(res,paste0(Dir_293T_20,"/",unique(meta_293T_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG_All.csv"))
+  write.csv(res,paste0(Dir_293T_20,"/",unique(meta_293T_20_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG_All.csv"))
   DEG<-subset(res,pvalue<0.05 & abs(log2FoldChange)>log2(1.5))
   DEG_num_293T_20[k,]<-nrow(DEG)
-  write.csv(DEG,file = paste0(Dir_293T_20,"/", unique(meta_293T_20_XL_2$Plate)[j],"_",colnames(Counts_Drug)[i],"_DESeq2_DEG.csv"))
+  write.csv(DEG,file = paste0(Dir_293T_20,"/", unique(meta_293T_20_XL_2$Plate)[j],"_",unique(colnames(Counts_Drug))[i],"_DESeq2_DEG.csv"))
    k=k+1
    i=i+1
   }
@@ -405,6 +405,7 @@ colnames(pvalue_293T)<-c(Treat_Name,rep("None",1))
 write.csv(FC_293T[,-10928],paste0(Dir_293T, "/20230905-FC_293T_palte_merge.csv"))
 write.csv(pvalue_293T[,-10928],paste0(Dir_293T, "/20230905-Pvalue_293T_palte_merge.csv"))
 ```
+
 
 
 
